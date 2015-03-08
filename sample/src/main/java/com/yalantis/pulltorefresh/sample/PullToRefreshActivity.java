@@ -52,17 +52,17 @@ public class PullToRefreshActivity extends ActionBarActivity {
         listView.setAdapter(new SampleAdapter(this, R.layout.list_item, sampleList));
 
         mPullToRefreshView = (PullToRefreshView) findViewById(R.id.pull_to_refresh);
-        mPullToRefreshView.setOnRefreshListener(new PullToRefreshView.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                mPullToRefreshView.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        mPullToRefreshView.setRefreshing(false);
-                    }
-                }, REFRESH_DELAY);
-            }
-        });
+//        mPullToRefreshView.setOnRefreshListener(new PullToRefreshView.OnRefreshListener() {
+//            @Override
+//            public void onRefresh() {
+//                mPullToRefreshView.postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        mPullToRefreshView.setRefreshing(false);
+//                    }
+//                }, REFRESH_DELAY);
+//            }
+//        });
     }
 
     class SampleAdapter extends ArrayAdapter<Map<String, Integer>> {

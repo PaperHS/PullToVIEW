@@ -5,7 +5,7 @@ import android.content.res.TypedArray;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
-import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -37,6 +37,7 @@ public class PullToRefreshView extends ViewGroup {
 
     private View mTarget;
     private ImageView mRefreshView;
+    private View BackView;
     private Interpolator mDecelerateInterpolator;
     private int mTouchSlop;
     private int mTotalDragDistance;
@@ -48,6 +49,7 @@ public class PullToRefreshView extends ViewGroup {
     private boolean mIsBeingDragged;
     private float mInitialMotionY;
     private int mFrom;
+    private int mHeight;
     private float mFromDragPercent;
     private boolean mNotify;
     private OnRefreshListener mListener;
@@ -67,10 +69,10 @@ public class PullToRefreshView extends ViewGroup {
         mTotalDragDistance = Utils.convertDpToPixel(context, DRAG_MAX_DISTANCE);
 
         mRefreshView = new ImageView(context);
-
+        BackView = LayoutInflater.from(context).inflate(R.layout.backview,null);
         setRefreshStyle(type);
 
-        addView(mRefreshView);
+        addView(BackView);
 
         setWillNotDraw(false);
         ViewCompat.setChildrenDrawingOrderEnabled(this, true);
@@ -105,7 +107,8 @@ public class PullToRefreshView extends ViewGroup {
         widthMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredWidth() - getPaddingRight() - getPaddingLeft(), MeasureSpec.EXACTLY);
         heightMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredHeight() - getPaddingTop() - getPaddingBottom(), MeasureSpec.EXACTLY);
         mTarget.measure(widthMeasureSpec, heightMeasureSpec);
-        mRefreshView.measure(widthMeasureSpec, heightMeasureSpec);
+//        mRefreshView.measure(widthMeasureSpec, heightMeasureSpec);
+        BackView.measure(widthMeasureSpec, heightMeasureSpec);
     }
 
     private void ensureTarget() {
@@ -114,7 +117,7 @@ public class PullToRefreshView extends ViewGroup {
         if (getChildCount() > 0) {
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
-                if (child != mRefreshView)
+                if (child != BackView)
                     mTarget = child;
             }
         }
@@ -242,8 +245,25 @@ public class PullToRefreshView extends ViewGroup {
         mAnimateToStartPosition.setDuration(animationDuration);
         mAnimateToStartPosition.setInterpolator(mDecelerateInterpolator);
         mAnimateToStartPosition.setAnimationListener(mToStartListener);
-        mRefreshView.clearAnimation();
-        mRefreshView.startAnimation(mAnimateToStartPosition);
+//        mRefreshView.clearAnimation();
+//        mRefreshView.startAnimation(mAnimateToStartPosition);
+        BackView.clearAnimation();
+        BackView.startAnimation(mAnimateToStartPosition);
+    }
+
+    private void animateOffsetToEndPosition() {
+        mFrom = mCurrentOffsetTop;
+        mFromDragPercent = mCurrentDragPercent;
+        long animationDuration = Math.abs((long) (MAX_OFFSET_ANIMATION_DURATION ));
+
+        mAnimateToEndPosition.reset();
+        mAnimateToEndPosition.setDuration(animationDuration);
+        mAnimateToEndPosition.setInterpolator(mDecelerateInterpolator);
+        mAnimateToEndPosition.setAnimationListener(mToStartListener);
+//        mRefreshView.clearAnimation();
+//        mRefreshView.startAnimation(mAnimateToStartPosition);
+        BackView.clearAnimation();
+        BackView.startAnimation(mAnimateToEndPosition);
     }
 
     private void animateOffsetToCorrectPosition() {
@@ -253,11 +273,14 @@ public class PullToRefreshView extends ViewGroup {
         mAnimateToCorrectPosition.reset();
         mAnimateToCorrectPosition.setDuration(MAX_OFFSET_ANIMATION_DURATION);
         mAnimateToCorrectPosition.setInterpolator(mDecelerateInterpolator);
-        mRefreshView.clearAnimation();
-        mRefreshView.startAnimation(mAnimateToCorrectPosition);
+//        mRefreshView.clearAnimation();
+//        mRefreshView.startAnimation(mAnimateToCorrectPosition);
+        BackView.clearAnimation();
+        BackView.startAnimation(mAnimateToCorrectPosition);
 
         if (mRefreshing) {
-            mBaseRefreshView.start();
+//            mBaseRefreshView.start();
+            animateOffsetToEndPosition();
             if (mNotify) {
                 if (mListener != null) {
                     mListener.onRefresh();
@@ -274,6 +297,12 @@ public class PullToRefreshView extends ViewGroup {
         @Override
         public void applyTransformation(float interpolatedTime, Transformation t) {
             moveToStart(interpolatedTime);
+        }
+    };
+    private final Animation mAnimateToEndPosition = new Animation() {
+        @Override
+        public void applyTransformation(float interpolatedTime, Transformation t) {
+            moveToEnd(interpolatedTime);
         }
     };
 
@@ -299,6 +328,15 @@ public class PullToRefreshView extends ViewGroup {
 
         mCurrentDragPercent = targetPercent;
         mBaseRefreshView.setPercent(mCurrentDragPercent, true);
+        setTargetOffsetTop(offset, false);
+    }
+    private void moveToEnd(float interpolatedTime) {
+        int targetTop = mFrom + (int) ((mHeight-mFrom) * interpolatedTime);
+        float targetPercent = mFromDragPercent * (1.0f - interpolatedTime);
+        int offset = targetTop - mTarget.getTop();
+
+        mCurrentDragPercent = targetPercent;
+//        mBaseRefreshView.setPercent(mCurrentDragPercent, true);
         setTargetOffsetTop(offset, false);
     }
 
@@ -392,9 +430,10 @@ public class PullToRefreshView extends ViewGroup {
         int top = getPaddingTop();
         int right = getPaddingRight();
         int bottom = getPaddingBottom();
-
+        mHeight=height;
         mTarget.layout(left, top + mCurrentOffsetTop, left + width - right, top + height - bottom + mCurrentOffsetTop);
-        mRefreshView.layout(left, top, left + width - right, top + height - bottom);
+//        mRefreshView.layout(left, top, left + width - right, top + height - bottom);
+        BackView.layout(left, top, left + width - right, top + height - bottom);
     }
 
     public void setOnRefreshListener(OnRefreshListener listener) {
